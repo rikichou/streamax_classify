@@ -468,6 +468,7 @@ def opencv_loader_withrect(path, rect, mode='color'):
         print('Image read mode is not supported')
         return
 
+    assert data is None, "failed to poen {}".format(path)
     data = get_input_face(data, rect)
     return data
 
