@@ -1,5 +1,7 @@
 #/usr/local/bin
 python train_example.py \
+  data/clean_1026/train.txt \
+  data/clean_1026/val.txt
   --batch_size 32 \
   --lr 0.006 \
   --beta 1.0 \
