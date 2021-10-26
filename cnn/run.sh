@@ -11,4 +11,4 @@ python train_example.py \
   --epochs 500 \
   --net_type VGGNet \
   --dataset PlayPhone \
-  --init_checkpoint /home/zyluo/RFBNet/weights/SSD_VGG_FPN_RFB_2020-08-31-19/SSD_VGG_FPN_RFB_VOC_epoches_55.pth \
+  --init_checkpoint SSD_VGG_FPN_RFB_VOC_epoches_55.pth \
