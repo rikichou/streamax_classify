@@ -29,6 +29,72 @@ import common
 import matplotlib as plt
 import random
 
+
+class DatasetFacialExpression(Dataset):
+    def __init__(self, data_prefix, ann_file, transform=None, target_transform=None,
+                 cache_root='data/cache', insize=300, if_bgr=True, train=True,
+                 require_path=False, mode='color'):
+        self.data_prefix = data_prefix
+        # [Cache Point]
+        self.cache_root = cache_root
+        self.samples = make_dataset_Expression(self.data_prefix, ann_file)
+
+        if len(self.samples) == 0:
+            raise (RuntimeError("Found 0 files in subfolders of: " + self.data_prefix))
+
+        self.loader = default_loader
+        self.transform = transform
+        self.target_transform = target_transform
+        self.if_bgr = if_bgr
+        self.require_path = require_path
+
+        if if_bgr:
+            self.preproc = preproc
+            self.mean = (104, 117, 123)
+            self.insize = insize
+            self.loader = opencv_loader_withrect
+            self.tarin = train
+            self.mode = mode
+        # preproc(image, mean, insize)
+        # self.targets = [s[1] for s in self.samples]
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (sample, target) where target is class_index of the target class.
+
+        info = {'img_prefix': data_prefix}
+        info['img_info'] = {'filename': filename}
+        info['gt_label'] = gt_label
+        info['face_rect'] = np.array([sx,sy,ex,ey], dtype=np.int64)
+        """
+        info = self.samples[index]
+        path = os.path.join(info['img_prefix'], info['img_info']['filename'])
+        target = info['gt_label']
+        face_rect = info['face_rect']
+        # TODO: Convert RGB to Gray Color
+        sample = self.loader(path, face_rect, self.mode)
+        # print(sample.shape)
+
+        if not self.if_bgr:
+            if self.transform is not None:
+                sample = self.transform(sample)
+            if self.target_transform is not None:
+                target = self.target_transform(target)
+        else:
+            sample = self.preproc(sample, self.mean, self.insize, self.tarin, path, self.mode)
+
+        if self.require_path:
+            return sample, target, path
+
+        return sample, target
+
 class DatasetPlayPhone(Dataset):
     def __init__(self, root, image_set, transform=None, target_transform=None, extensions=None, 
             cache_root='data/cache', insize = 300, if_bgr = True, train = True,
@@ -243,6 +309,43 @@ def _make_dataset(directory, class_to_idx, extensions=None, is_valid_folder=None
         # print('=> load {} with target {} and {} samples'.format(target_class, class_index, target_class_num))
     return instances
 
+
+
+def make_dataset_Expression(data_prefix, ann_file):
+
+    IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif')
+    CLASSES = [
+        'Angry',
+        'Happy',
+        'Neutral',
+        'Sad'
+    ]
+
+    with open(ann_file) as f:
+        samples = [x.strip().split(';') for x in f.readlines()]
+
+    statistics = {}
+    data_infos = []
+    for filename, gt_label, sx, sy, ex, ey in samples:
+        gt_label = int(gt_label)
+        sx = int(sx)
+        sy = int(sy)
+        ex = int(ex)
+        ey = int(ey)
+        info = {'img_prefix': data_prefix}
+        info['img_info'] = {'filename': filename}
+        info['gt_label'] = gt_label
+        info['face_rect'] = np.array([sx,sy,ex,ey], dtype=np.int64)
+        data_infos.append(info)
+
+        # statistics
+        if gt_label not in statistics:
+            statistics[gt_label] = 0
+        statistics[gt_label] += 1
+
+    print("!!!! data statistics ", statistics)
+    return data_infos
+
 def make_dataset_PlayPhone(directory, class_to_idx, extensions=None, is_valid_file=None, is_reg_bbox=False):
     instances = []
     directory = os.path.expanduser(directory)
@@ -327,7 +430,46 @@ def opencv_loader_new(path, mode='color'):
         return
 
     return data
-    
+
+def get_input_face(image, rect):
+    sx,sy,ex,ey = rect
+    if len(image.shape)<3:
+        h,w = image.shape
+    else:
+        h,w,c = image.shape
+    faceh = ey-sy
+    facew = ex-sx
+
+    longsize = max(faceh, facew)
+    expendw = longsize-facew
+    expendh  = longsize-faceh
+
+    sx = sx-(expendw/2)
+    ex = ex+(expendw/2)
+    sy = sy-(expendh/2)
+    ey = ey+(expendh/2)
+
+    sx = int(max(0, sx))
+    sy = int(max(0, sy))
+    ex = int(min(w-1, ex))
+    ey = int(min(h-1, ey))
+
+    if len(image.shape)<3:
+        return image[sy:ey, sx:ex]
+    else:
+        return image[sy:ey, sx:ex, :]
+
+def opencv_loader_withrect(path, rect, mode='color'):
+    if mode == 'color':
+        data = cv2.imread(path, cv2.IMREAD_COLOR)
+    elif mode == 'gray':
+        data = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    else:
+        print('Image read mode is not supported')
+        return
+
+    data = get_input_face(data, rect)
+    return data
 
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)

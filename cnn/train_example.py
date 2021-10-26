@@ -21,12 +21,12 @@ import torchvision.transforms as transforms
 from torchvision import models
 
 from model import BaseNet, VGGNet_new
-from dataset import DatasetPlayPhone
+from dataset import DatasetFacialExpression
 from loss import FocalLossWithSigmoid
 from torch.nn import CrossEntropyLoss
 from utils import get_model_summary
 from optimizer import SGD_GC
-from transforms import _ToTensor
+#from transforms import _ToTensor
 import math
 
 import logging
@@ -42,6 +42,10 @@ logger = logging.getLogger(__name__)
 
 def parse():
     parser = argparse.ArgumentParser(description='DSM Fatigue training loop')
+    parser.add_argument('train_ann_file', type=str,
+                        help='train annotation file path')
+    parser.add_argument('val_ann_file', type=str,
+                        help='valid annotation file path')
     parser.add_argument('--net_type', default='basenet', type=str,
                         help='networktype: cnn, and lstm')
     parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
@@ -50,7 +54,7 @@ def parse():
                         help='number of total epochs to run')
     parser.add_argument('-b', '--batch_size', default=128, type=int,
                         metavar='N', help='mini-batch size (default: 256)')
-    parser.add_argument('--num_classes', type=int, default=3, metavar='N',
+    parser.add_argument('--num_classes', type=int, default=4, metavar='N',
                         help='number of label classes (default: 1000)')
     parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
                         metavar='LR', help='initial learning rate')
@@ -115,16 +119,12 @@ def main():
                          and callable(BaseNet.__dict__[name]))
     logger.info(model_names)
 
-    train_dir = os.path.join('/home/zyluo/data/phone_img/new_train')
-    valid_dir = os.path.join('/home/zyluo/data/phone_img/new_test')
-
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     train_loader = torch.utils.data.DataLoader(
-        DatasetPlayPhone(
-            root=train_dir,
-            image_set='train',
-            extensions='jpg',
+        DatasetFacialExpression(
+            data_prefix='data',
+            ann_file='train_ann_file',
             transform = transforms.Compose([
                 transforms.Resize((300,300)),
                 transforms.RandomHorizontalFlip(),
@@ -143,10 +143,9 @@ def main():
         pin_memory=True
     )
     valid_loader = torch.utils.data.DataLoader(
-        DatasetPlayPhone(
-            root=valid_dir,
-            image_set='valid',
-            extensions='jpg',
+        DatasetFacialExpression(
+            data_prefix='data',
+            ann_file='train_ann_file',
             transform = transforms.Compose([
                 transforms.Resize((300,300)),
                 # transforms.CenterCrop(224),
