@@ -124,7 +124,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         DatasetFacialExpression(
             data_prefix='data',
-            ann_file='train_ann_file',
+            ann_file=args.train_ann_file,
             transform = transforms.Compose([
                 transforms.Resize((300,300)),
                 transforms.RandomHorizontalFlip(),
@@ -145,7 +145,7 @@ def main():
     valid_loader = torch.utils.data.DataLoader(
         DatasetFacialExpression(
             data_prefix='data',
-            ann_file='train_ann_file',
+            ann_file=args.val_ann_file,
             transform = transforms.Compose([
                 transforms.Resize((300,300)),
                 # transforms.CenterCrop(224),
