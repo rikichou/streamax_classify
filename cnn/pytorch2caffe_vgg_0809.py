@@ -8,9 +8,9 @@ import caffe
 import numpy as np
 
 
-caffemodel = 'models/epoch_16.caffemodel'
+caffemodel = 'models/epoch_16_withsoftmax.caffemodel'
 
-protofile = 'base_model_4_classes.prototxt'
+protofile = 'base_model_4_classes_withsoftmax.prototxt'
 pytorch_pth = 'models/epoch_16_80.5932_model_best.pth.tar'
 
 
