@@ -750,5 +750,5 @@ layers {
   bottom: "fc1"
   top: "prob"
   name: "prob"
-  type: "softmax"
+  type: "Softmax"
 }
