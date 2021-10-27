@@ -746,9 +746,10 @@ layer {
   }
 }
 
-layers {
-  bottom: "fc1"
-  top: "prob"
-  name: "prob"
-  type: "Softmax"
+
+layer {
+name: "prob"
+type: "Softmax"
+bottom: "fc1"
+top: "prob"
 }
